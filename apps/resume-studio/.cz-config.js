@@ -1,0 +1,67 @@
+'use strict';
+
+module.exports = {
+  messages: {
+    type: '选择你要提交的类型 :',
+    scope: '选择一个提交范围（可选）:',
+    customScope: '请输入自定义的提交范围 :',
+    subject: '填写简短精炼的变更描述 :\n',
+    body: '填写更加详细的变更描述（可选）。使用 "|" 换行 :\n',
+    breaking: '列举非兼容性重大的变更（可选）。使用 "|" 换行 :\n',
+    footerPrefixesSelect: '选择关联issue前缀（可选）:',
+    customFooterPrefix: '输入自定义issue前缀 :',
+    footer: '列举关联issue (可选) 例如: #31, #I3244 :\n',
+    generatingByAI: '正在通过 AI 生成你的提交简短描述...',
+    generatedSelectByAI: '选择一个 AI 生成的简短描述:',
+    confirmCommit: '是否提交或修改commit ?'
+  },
+  types: [
+    { value: 'feature', name: 'feature:  增加新功能' },
+    { value: 'bug', name: 'bug:      测试反馈bug列表中的bug号' },
+    { value: 'fix', name: 'fix:      修复bug' },
+    { value: 'ui', name: 'ui:       更新UI' },
+    { value: 'docs', name: 'docs:     文档变更' },
+    { value: 'style', name: 'style:    代码格式(不影响代码运行的变动)' },
+    { value: 'perf', name: 'perf:     性能优化' },
+    { value: 'refactor', name: 'refactor: 重构(既不是增加feature，也不是修复bug)' },
+    { value: 'release', name: 'release:  发布' },
+    { value: 'deploy', name: 'deploy:   部署' },
+    { value: 'test', name: 'test:     增加测试' },
+    { value: 'chore', name: 'chore:    构建过程或辅助工具的变动(更改配置文件)' },
+    { value: 'revert', name: 'revert:   回退' },
+    { value: 'build', name: 'build:    打包' }
+  ],
+  useEmoji: false,
+  emojiAlign: 'center',
+  useAI: false,
+  aiNumber: 1,
+  themeColorCode: '',
+  scopes: [],
+  allowCustomScopes: true,
+  allowEmptyScopes: true,
+  customScopesAlign: 'bottom',
+  customScopesAlias: '以上都不是？我要自定义',
+  emptyScopesAlias: '跳过',
+  upperCaseSubject: false,
+  markBreakingChangeMode: false,
+  allowBreakingChanges: ['feat', 'fix'],
+  breaklineNumber: 100,
+  breaklineChar: '|',
+  skipQuestions: [],
+  issuePrefixes: [
+    // 如果使用 gitee 作为开发管理
+    { value: 'link', name: 'link:     链接 ISSUES 进行中' },
+    { value: 'closed', name: 'closed:   标记 ISSUES 已完成' }
+  ],
+  customIssuePrefixAlign: 'top',
+  emptyIssuePrefixAlias: '跳过',
+  customIssuePrefixAlias: '自定义前缀',
+  allowCustomIssuePrefix: true,
+  allowEmptyIssuePrefix: true,
+  confirmColorize: true,
+  scopeOverrides: undefined,
+  defaultBody: '',
+  defaultIssues: '',
+  defaultScope: '',
+  defaultSubject: ''
+};

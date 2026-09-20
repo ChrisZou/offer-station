@@ -1,0 +1,1 @@
+import{K as a,_ as s}from"./workbench-Ck_Dg-ZY.js";import{v as o,x as e,y as r,O as t}from"./vue-DO3cCVi4.js";const v={class:"nav-bar-box background-nav"},c=s(o({__name:"ResumeDetailNavBar",setup:s=>(s,o)=>(r(),e("div",v,[t(a)]))}),[["__scopeId","data-v-3cb44882"]]);export{c as _};

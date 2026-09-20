@@ -1,0 +1,381 @@
+<template>
+  <div class="design-resume-box">
+    <!-- 导航栏 -->
+    <nav-bar
+      @reset="reset"
+      @generate-report="generateReport"
+      @download-m-d="downloadMD"
+      @download-json="downloadJson"
+      @preview-resume="handlePreviewResume"
+    ></nav-bar>
+    <!-- 底部区域 -->
+    <div :key="resetKey" class="bottom-box">
+      <!-- 数据配置 -->
+      <div v-loading="isLoading" class="left">
+        <data-config v-if="HJNewJsonStore.componentsTree.length"></data-config>
+        <!-- 暂无数据 -->
+        <div v-else class="no-data-box">
+          <no-data-vue></no-data-vue>
+        </div>
+      </div>
+      <!-- 简历预览 -->
+      <div id="resume-container" class="right">
+        <!-- 主题配置 -->
+        <global-theme-setting-bar></global-theme-setting-bar>
+        <div v-loading="isLoading" class="resume-container" :style="{ zoom: zoomScale }">
+          <resume-render :is-loading="isLoading"></resume-render>
+        </div>
+      </div>
+      <!-- 操作列 -->
+      <div class="page-eidtor-box">
+        <page-editor-list></page-editor-list>
+      </div>
+    </div>
+
+    <!-- 导出pdf进度弹窗 -->
+    <process-bar-dialog
+      :dialog-visible="dialogVisible"
+      :percentage-num="percentage"
+      @cancle="cancleProgress"
+    ></process-bar-dialog>
+  </div>
+
+  <!-- AI JSON转md -->
+  <ai-json-to-md-drawer
+    :drawer="aiToMdDrawer"
+    @close-ai-optimize-drawer="closeAiDrawer"
+  ></ai-json-to-md-drawer>
+
+  <!-- 预览弹窗 -->
+  <preview-resume-dialog
+    :dialog-preview-resume-visible="dialogPreviewResumeVisible"
+    @cancle="canclePreviewResume"
+  ></preview-resume-dialog>
+</template>
+
+<script lang="ts" setup>
+  import NavBar from './components/NavBar.vue';
+  import DataConfig from '../createTemplate/designer/components/DataConfig.vue';
+  import appStore from '@/store';
+  import { storeToRefs } from 'pinia';
+  import { getTemplateByIdAsync, getUsertemplateAsync } from '@/http/api/createTemplate';
+  import { closeGlobalLoading, getUuid } from '@/utils/common';
+  import { nextTick } from 'vue';
+  import pageSchemas from '../createTemplate/designer/schema/pageSchema';
+  import { useRoute } from 'vue-router';
+  import ResumeRender from '../createTemplate/designer/components/ResumeRender.vue';
+  import PageEditorList from './components/PageEditorList.vue';
+  import { exportPdfNew, exportPNGNew } from '@/utils/pdf';
+  import ProcessBarDialog from '@/components/ProcessBarDialog/ProcessBarDialog.vue';
+  import { useHead } from '@vueuse/head';
+  import GlobalThemeSettingBar from '../createTemplate/designer/components/GlobalThemeSettingBar.vue';
+  import { title } from '@/config/seo';
+  import NoDataVue from '@/components/NoData/NoData.vue';
+  import AiJsonToMdDrawer from './components/AiJsonToMdDrawer.vue';
+  import PreviewResumeDialog from './components/PreviewResumeDialog.vue';
+  import FileSaver from 'file-saver';
+
+  const isLoading = ref(true);
+  const { HJNewJsonStore, selectedPageName, fromAiGenerate } = storeToRefs(
+    appStore.useCreateTemplateStore
+  );
+  const route = useRoute();
+
+  // 响应式缩放比例
+  const zoomScale = ref(1);
+  const adjustZoomScale = () => {
+    const rightBox = document.getElementById('resume-container') as HTMLElement;
+    const fixedWidth = 820; // ResumeRender 的固定宽度
+    if (rightBox) {
+      // 获取容器宽度，减去左右 padding 的宽度
+      const styles = window.getComputedStyle(rightBox);
+      const paddingLeft = parseFloat(styles.paddingLeft || '0');
+      const paddingRight = parseFloat(styles.paddingRight || '0');
+
+      const availableWidth = rightBox.clientWidth - paddingLeft - paddingRight - 90; // 可用宽度
+      zoomScale.value = availableWidth / fixedWidth; // 计算缩放比例
+      if (zoomScale.value > 1) zoomScale.value = 1; // 限制最大比例为 1
+    }
+  };
+
+  // 查询模版数据
+  const getTemplateData = async () => {
+    isLoading.value = true;
+    const data = await getTemplateByIdAsync(route.params.id);
+    if (data.status === 200) {
+      HJNewJsonStore.value = data.data.template_json;
+      HJNewJsonStore.value.props.title = data.data.template_title;
+      ElMessage.success('初始化成功');
+      useHead({
+        title: HJNewJsonStore.value.props.title || title
+      });
+      isLoading.value = false;
+    } else {
+      defaultTemplate();
+    }
+  };
+
+  // 重置
+  const { resetKey } = storeToRefs(appStore.useCreateTemplateStore);
+  const reset = async () => {
+    await getTemplateData();
+    resetKey.value++; // 增加key，强制重新渲染
+  };
+
+  // 查询用户数据
+  const getUserTemplate = async () => {
+    const data = await getUsertemplateAsync(route.params.id);
+    if (data.data.status === 200) {
+      HJNewJsonStore.value = data.data.data.template_json;
+      HJNewJsonStore.value.props.title = data.data.data.template_json.config.title;
+      useHead({
+        title: HJNewJsonStore.value.props.title || title
+      });
+      isLoading.value = false;
+    } else {
+      defaultTemplate();
+    }
+  };
+
+  // 默认模版数据
+  const defaultTemplate = () => {
+    HJNewJsonStore.value = pageSchemas[selectedPageName.value];
+    HJNewJsonStore.value.id = getUuid();
+    isLoading.value = false;
+  };
+
+  const { token } = appStore.useTokenStore;
+  if (token) {
+    // 如果是从AI智能生成简历跳转过来，则不查询模版
+    console.log('fromAiGenerate', fromAiGenerate.value);
+    if (!fromAiGenerate.value) {
+      // 查询用户简历
+      getUserTemplate();
+    } else {
+      isLoading.value = false;
+    }
+  } else {
+    getTemplateData();
+  }
+
+  // 初始化和窗口变化事件绑定
+  onMounted(async () => {
+    adjustZoomScale();
+    window.addEventListener('resize', adjustZoomScale);
+    closeGlobalLoading(); // 闭全局等待层
+  });
+
+  onBeforeUnmount(() => {
+    fromAiGenerate.value = false;
+    window.removeEventListener('resize', adjustZoomScale);
+  });
+
+  // 生成pdf方法
+  const dialogVisible = ref<boolean>(false);
+  const percentage = ref<number>(10);
+  let timer: any = null;
+  let currentExportUrl: string = '';
+  const generateReport = async (type: string) => {
+    dialogVisible.value = true;
+    timer = setInterval(() => {
+      percentage.value += 5;
+      if (percentage.value > 95) {
+        percentage.value = 98;
+        clearInterval(timer);
+      }
+    }, 500);
+    try {
+      if (type === 'pdf') {
+        currentExportUrl = '/huajian/pdf/getPdf';
+        await exportPdfNew(route.params.id as string);
+      } else {
+        currentExportUrl = '/huajian/pdf/getPNG';
+        await exportPNGNew(route.params.id as string);
+      }
+      clearInterval(timer);
+      percentage.value = 100;
+      // 查询用简币信息
+      const { getUserIntegralTotal } = appStore.useUserInfoStore;
+      getUserIntegralTotal();
+    } catch (error) {
+      clearInterval(timer);
+      dialogVisible.value = false;
+      percentage.value = 10;
+      console.error('导出取消:', error);
+    } finally {
+      currentExportUrl = '';
+    }
+  };
+
+  // 导出为Markdown
+  const aiToMdDrawer = ref(false); // ai json to md drawer
+  const downloadMD = () => {
+    aiToMdDrawer.value = true;
+  };
+
+  // 导出为JSON
+  const downloadJson = () => {
+    try {
+      console.log('开始导出JSON');
+      console.log('HJNewJsonStore.value:', HJNewJsonStore.value);
+      
+      // 确保数据存在
+      if (!HJNewJsonStore.value) {
+        ElMessage.error('简历数据不存在');
+        return;
+      }
+      
+      // 确保config和title存在
+      const title = HJNewJsonStore.value.config?.title || 'resume';
+      console.log('导出文件名:', title + '.json');
+      
+      const JSONData = JSON.stringify(HJNewJsonStore.value, null, 4);
+      const blob = new Blob([JSONData], { type: 'application/json' });
+      FileSaver.saveAs(blob, title + '.json');
+      
+      console.log('JSON导出成功');
+    } catch (error) {
+      console.error('JSON导出失败:', error);
+      ElMessage.error('JSON导出失败，请重试');
+    }
+  };
+
+  // 关闭AI转md抽屉
+  const closeAiDrawer = () => {
+    aiToMdDrawer.value = false;
+  };
+
+  // 关闭进度弹窗
+  let isCanceling = false;
+  const cancleProgress = () => {
+    // 防止重复执行
+    if (isCanceling) return;
+    isCanceling = true;
+    
+    // 取消当前正在进行的导出请求
+    if (currentExportUrl) {
+      // 导入http模块（使用已缓存的实例）
+      import('@/http/request').then(({ default: http }) => {
+        // 取消所有请求，确保能取消当前的导出请求
+        http.cancelAllRequest();
+      });
+      ElMessage({ message: '导出操作已取消', type: 'info' });
+    }
+    // 清除定时器
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+    // 先关闭弹窗，再重置状态，避免状态闪烁
+    dialogVisible.value = false;
+    // 使用nextTick确保DOM更新后再重置percentage，避免触发watch监听器
+    nextTick(() => {
+      percentage.value = 10;
+      currentExportUrl = '';
+      isCanceling = false;
+    });
+  };
+
+  // 打开预览弹窗
+  const dialogPreviewResumeVisible = ref<boolean>(false);
+  const handlePreviewResume = () => {
+    console.log('打开预览弹窗');
+    dialogPreviewResumeVisible.value = true;
+  };
+
+  // 关闭预览弹窗
+  const canclePreviewResume = () => {
+    dialogPreviewResumeVisible.value = false;
+  };
+</script>
+
+<style lang="scss" scoped>
+  .design-resume-box {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow-y: hidden;
+    white-space: pre-line;
+
+    .bottom-box {
+      width: 100%;
+      flex: 1;
+      display: flex;
+      box-sizing: border-box;
+      overflow: hidden;
+      overflow-x: auto;
+      // background-image: linear-gradient(to right, rgb(203 213 225) 1px, transparent 1px),
+      //   linear-gradient(to bottom, rgb(203 213 225) 1px, transparent 1px);
+      // background-size: 10px 10px;
+      // background-position: center center;
+      background-image: linear-gradient(-20deg, #e9defa 0%, #fbfcdb 100%);
+
+      .left {
+        flex: 0 0 40%; // 固定宽度占比
+        max-width: 40%; // 防止超出
+        min-width: 450px; // 设置最小宽度（可以根据需求调整）
+        background: #fff;
+        .no-data-box {
+          height: 100%;
+          display: flex;
+          align-items: center;
+        }
+
+        .no-data {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: #fff;
+
+          p {
+            font-size: 16px;
+            letter-spacing: 1px;
+            color: #2cbd99;
+          }
+
+          :deep(img) {
+            width: 40%;
+            height: auto;
+          }
+        }
+      }
+
+      .right {
+        flex: 1; // 动态占据剩余空间
+        min-width: 500px; // 设置最小宽度
+        overflow-x: hidden;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-bottom: 20px;
+        position: relative;
+
+        .resume-container {
+          margin-top: 20px;
+          width: 820px; // 固定宽度
+          height: auto;
+          z-index: 1;
+        }
+      }
+      .page-eidtor-box {
+        width: 60px;
+        min-height: 300px;
+        position: absolute;
+        right: 15px;
+        top: 130px;
+      }
+    }
+
+    :deep(.full-screen) {
+      display: none;
+      .el-drawer__body {
+        overflow: hidden;
+      }
+    }
+  }
+</style>

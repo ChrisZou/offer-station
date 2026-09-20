@@ -1,0 +1,27 @@
+# Dependencies and generated output
+node_modules/
+.pnpm-store/
+.next/
+.vinext/
+.wrangler/
+.temp/
+dist/
+dist.zip
+coverage/
+*.tsbuildinfo
+*.log
+
+# Local credentials and machine files
+.env
+.env.local
+.env.*.local
+.dev.vars*
+*.pem
+*.crt
+.DS_Store
+.zcode/
+
+# Local exports and duplicate delivery bundles
+/tmp/
+/output/
+/交付版本/

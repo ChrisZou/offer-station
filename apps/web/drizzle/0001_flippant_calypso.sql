@@ -1,0 +1,1 @@
+CREATE INDEX `idx_jobs_saved_at` ON `jobs` (`saved_at`);

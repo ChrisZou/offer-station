@@ -1,0 +1,30 @@
+services:
+  web:
+    container_name: resume-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/etc/nginx/ssl
+      - ./nginx-nav.conf:/etc/nginx/nginx.conf
+      - ./nav/certs:/etc/nginx/nav/ssl
+      - ./tools/dist:/usr/share/nginx/html/tools  # 新增 tools 静态文件目录（可选）
+      - ./tools/certs:/etc/nginx/tools/ssl
+
+  twonav:
+    image: tznb/twonav:latest
+    container_name: twonav
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    volumes:
+      - /www/wwwroot/twonav:/www
+
+
+## 执行命令 
+## docker-compose -f docker-compose-nav.yml down
+## docker-compose -f docker-compose-nav.yml up --build -d

@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "求职工作台",
+  "version": "0.10.3",
+  "description": "浏览 BOSS 直聘时收藏岗位，并同步到求职工作台。",
+  "permissions": ["activeTab", "tabs", "storage", "sidePanel", "scripting"],
+  "host_permissions": [
+    "https://www.zhipin.com/*",
+    "https://www.bosszhipin.com/*",
+    "https://img.bosszhipin.com/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*",
+    "https://qiuzhi-job-workbench.eichornaskew.chatgpt.site/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "打开求职工作台"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.zhipin.com/*", "https://www.bosszhipin.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*",
+        "https://qiuzhi-job-workbench.eichornaskew.chatgpt.site/*"
+      ],
+      "js": ["workbench-sync.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["sidepanel.html", "sidepanel.css", "sidepanel.js", "assets/logo-toolbar-v2.png"],
+      "matches": ["https://www.zhipin.com/*", "https://www.bosszhipin.com/*"]
+    }
+  ]
+}

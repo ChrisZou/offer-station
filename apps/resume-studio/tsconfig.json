@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "typeRoots": ["node_modules/@types", "src/interface", "types"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "target": "esnext",
+    "useDefineForClassFields": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": false,
+    "jsx": "preserve",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "lib": ["esnext", "dom"],
+    "baseUrl": "./",
+    "paths": {
+      "@": ["src"],
+      "@/*": ["src/*"]
+    },
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "types": [
+      "node",
+      "json-editor-vue3",
+      "colorpicker-v3",
+      "vue3-pdfjs/esm",
+      "vue3-print-nb",
+      "v-contextmenu",
+      "vue-json-viewer",
+      "@vueuse/head"
+    ]
+  },
+  "include": [
+    "src/env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "types/**/*.d.ts"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}
